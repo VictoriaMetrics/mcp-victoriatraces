@@ -110,6 +110,7 @@ MCP Server for VictoriaTraces is configured via environment variables:
 | `VT_INSTANCE_ENTRYPOINT`   | URL to VictoriaTraces instance                            | Yes | -      | -                      |
 | `VT_INSTANCE_BEARER_TOKEN` | Authentication token for VictoriaTraces API               | No | -      | -                      |
 | `VT_INSTANCE_HEADERS`      | Custom HTTP headers to send with requests (comma-separated key=value pairs) | No | -      | -                      |
+| `VT_DEFAULT_TENANT_ID`     | Default tenant ID used when tenant is not specified in requests (format: `AccountID:ProjectID` or `AccountID`) | No       | `0:0`            | -                      |
 | `MCP_SERVER_MODE`          | Server operation mode. See [Modes](#modes) for details. | No | `stdio` | `stdio`, `sse`, `http` |
 | `MCP_LISTEN_ADDR`          | Address for SSE or HTTP server to listen on             | No | `localhost:8081` | -                      |
 | `MCP_DISABLED_TOOLS`       | Comma-separated list of tools to disable                | No | -      | -                      |
