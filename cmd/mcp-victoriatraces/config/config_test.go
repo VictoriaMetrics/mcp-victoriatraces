@@ -235,10 +235,10 @@ func TestInitConfig(t *testing.T) {
 
 	// Test case 7: Default tenant ID - valid format
 	t.Run("Valid default tenant ID", func(t *testing.T) {
-		os.Setenv("VL_INSTANCE_ENTRYPOINT", "http://example.com")
+		os.Setenv("VT_INSTANCE_ENTRYPOINT", "http://example.com")
 		os.Setenv("MCP_SERVER_MODE", "stdio")
 		os.Setenv("MCP_HEARTBEAT_INTERVAL", "")
-		os.Setenv("VL_DEFAULT_TENANT_ID", "123:456")
+		os.Setenv("VT_DEFAULT_TENANT_ID", "123:456")
 
 		cfg, err := InitConfig()
 		if err != nil {
@@ -256,8 +256,8 @@ func TestInitConfig(t *testing.T) {
 
 	// Test case 8: Default tenant ID - account only
 	t.Run("Default tenant ID - account only", func(t *testing.T) {
-		os.Setenv("VL_INSTANCE_ENTRYPOINT", "http://example.com")
-		os.Setenv("VL_DEFAULT_TENANT_ID", "789")
+		os.Setenv("VT_INSTANCE_ENTRYPOINT", "http://example.com")
+		os.Setenv("VT_DEFAULT_TENANT_ID", "789")
 
 		cfg, err := InitConfig()
 		if err != nil {
@@ -275,8 +275,8 @@ func TestInitConfig(t *testing.T) {
 
 	// Test case 9: Default tenant ID - empty (should use 0:0)
 	t.Run("Default tenant ID - empty", func(t *testing.T) {
-		os.Setenv("VL_INSTANCE_ENTRYPOINT", "http://example.com")
-		os.Setenv("VL_DEFAULT_TENANT_ID", "")
+		os.Setenv("VT_INSTANCE_ENTRYPOINT", "http://example.com")
+		os.Setenv("VT_DEFAULT_TENANT_ID", "")
 
 		cfg, err := InitConfig()
 		if err != nil {
@@ -294,8 +294,8 @@ func TestInitConfig(t *testing.T) {
 
 	// Test case 10: Default tenant ID - invalid format
 	t.Run("Default tenant ID - invalid format", func(t *testing.T) {
-		os.Setenv("VL_INSTANCE_ENTRYPOINT", "http://example.com")
-		os.Setenv("VL_DEFAULT_TENANT_ID", "invalid")
+		os.Setenv("VT_INSTANCE_ENTRYPOINT", "http://example.com")
+		os.Setenv("VT_DEFAULT_TENANT_ID", "invalid")
 
 		_, err := InitConfig()
 		if err == nil {
@@ -305,8 +305,8 @@ func TestInitConfig(t *testing.T) {
 
 	// Test case 11: Default tenant ID - too many colons
 	t.Run("Default tenant ID - too many colons", func(t *testing.T) {
-		os.Setenv("VL_INSTANCE_ENTRYPOINT", "http://example.com")
-		os.Setenv("VL_DEFAULT_TENANT_ID", "1:2:3")
+		os.Setenv("VT_INSTANCE_ENTRYPOINT", "http://example.com")
+		os.Setenv("VT_DEFAULT_TENANT_ID", "1:2:3")
 
 		_, err := InitConfig()
 		if err == nil {
