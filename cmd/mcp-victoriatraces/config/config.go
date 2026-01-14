@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/VictoriaMetrics/VictoriaLogs/lib/logstorage"
 )
 
 type Config struct {
@@ -16,6 +18,7 @@ type Config struct {
 	customHeaders     map[string]string
 	disabledTools     map[string]bool
 	heartbeatInterval time.Duration
+	defaultTenantID   logstorage.TenantID
 
 	// Logging configuration
 	logFormat string
@@ -111,6 +114,15 @@ func InitConfig() (*Config, error) {
 		result.listenAddr = "localhost:8081"
 	}
 
+	defaultTenantID := strings.ToLower(os.Getenv("VT_DEFAULT_TENANT_ID"))
+	if defaultTenantID != "" {
+		tenantID, err := logstorage.ParseTenantID(defaultTenantID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse VT_DEFAULT_TENANT_ID %q: %w", defaultTenantID, err)
+		}
+		result.defaultTenantID = tenantID
+	}
+
 	var err error
 
 	result.entryPointURL, err = url.Parse(result.entrypoint)
@@ -167,4 +179,8 @@ func (c *Config) LogFormat() string {
 
 func (c *Config) LogLevel() string {
 	return c.logLevel
+}
+
+func (c *Config) DefaultTenantID() logstorage.TenantID {
+	return c.defaultTenantID
 }
