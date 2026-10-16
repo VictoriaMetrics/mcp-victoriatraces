@@ -37,7 +37,7 @@ const (
 	// Every value occupies 2 bytes.
 	valueTypeUint16 = valueType(4)
 
-	// uint values up to 2^31-1 are encoded into valueTypeUint32.
+	// uint values up to 2^32-1 are encoded into valueTypeUint32.
 	// Every value occupies 4 bytes.
 	valueTypeUint32 = valueType(5)
 
@@ -354,7 +354,7 @@ func TryParseTimestampRFC3339Nano(s string) (int64, bool) {
 	if !ok {
 		return 0, false
 	}
-	nsecs = subNoOverflowInt64(nsecs, offsetNsecs)
+	nsecs = SubInt64NoOverflow(nsecs, offsetNsecs)
 	s = prefix
 
 	// Parse optional fractional part of seconds.
@@ -566,7 +566,7 @@ func tryParseUint64(s string) (uint64, bool) {
 	}
 
 	n := uint64(0)
-	for i := 0; i < len(s); i++ {
+	for i := range len(s) {
 		ch := s[i]
 		if ch == '_' {
 			continue
@@ -606,7 +606,7 @@ func tryParseDateUint64(s string) (uint64, bool) {
 	}
 
 	n := uint64(0)
-	for i := 0; i < len(s); i++ {
+	for i := range len(s) {
 		ch := s[i]
 		if ch < '0' || ch > '9' {
 			return 0, false
@@ -1314,7 +1314,7 @@ func (vd *valuesDict) unmarshalInplace(src []byte) ([]byte, error) {
 	}
 	dictLen := int(src[0])
 	src = src[1:]
-	for i := 0; i < dictLen; i++ {
+	for i := range dictLen {
 		data, nSize := encoding.UnmarshalBytes(src)
 		if nSize <= 0 {
 			return srcOrig, fmt.Errorf("cannot umarshal value %d out of %d from dict", i, dictLen)

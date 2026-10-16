@@ -19,6 +19,9 @@ type pipeUnpackJSON struct {
 	// fieldFilters is a list of field filters to extract from json.
 	fieldFilters []string
 
+	// preserveKeys is a list of JSON keys for preserving JSON values.
+	preserveKeys []string
+
 	// resultPrefix is prefix to add to unpacked field names
 	resultPrefix string
 
@@ -38,7 +41,10 @@ func (pu *pipeUnpackJSON) String() string {
 		s += " from " + quoteTokenIfNeeded(pu.fromField)
 	}
 	if !prefixfilter.MatchAll(pu.fieldFilters) {
-		s += " fields (" + fieldNamesString(pu.fieldFilters) + ")"
+		s += " fields (" + fieldFiltersString(pu.fieldFilters) + ")"
+	}
+	if len(pu.preserveKeys) > 0 {
+		s += " preserve_keys (" + fieldNamesString(pu.preserveKeys) + ")"
 	}
 	if pu.resultPrefix != "" {
 		s += " result_prefix " + quoteTokenIfNeeded(pu.resultPrefix)
@@ -61,9 +67,11 @@ func (pu *pipeUnpackJSON) canLiveTail() bool {
 }
 
 func (pu *pipeUnpackJSON) canReturnLastNResults() bool {
-	// TODO: verify that the unpacked fields do not overwrite _time with non-timestamp values.
+	return canReturnLastNResultsAfterUnpack(pu.fieldFilters, pu.resultPrefix, pu.keepOriginalFields)
+}
 
-	return true
+func (pu *pipeUnpackJSON) isFixedOutputFieldsOrder() bool {
+	return false
 }
 
 func (pu *pipeUnpackJSON) updateNeededFields(pf *prefixfilter.Filter) {
@@ -74,8 +82,8 @@ func (pu *pipeUnpackJSON) hasFilterInWithQuery() bool {
 	return pu.iff.hasFilterInWithQuery()
 }
 
-func (pu *pipeUnpackJSON) initFilterInValues(cache *inValuesCache, getFieldValuesFunc getFieldValuesFunc, keepSubquery bool) (pipe, error) {
-	iffNew, err := pu.iff.initFilterInValues(cache, getFieldValuesFunc, keepSubquery)
+func (pu *pipeUnpackJSON) initFilterInValues(cache *inValuesCache, getFieldValues getFieldValuesFunc) (pipe, error) {
+	iffNew, err := pu.iff.initFilterInValues(cache, getFieldValues)
 	if err != nil {
 		return nil, err
 	}
@@ -90,12 +98,13 @@ func (pu *pipeUnpackJSON) visitSubqueries(visitFunc func(q *Query)) {
 
 func (pu *pipeUnpackJSON) newPipeProcessor(_ int, _ <-chan struct{}, _ func(), ppNext pipeProcessor) pipeProcessor {
 	unpackJSON := func(uctx *fieldsUnpackerContext, s string) {
+		s = trimJSONWhitespace(s)
 		if len(s) == 0 || s[0] != '{' {
 			// This isn't a JSON object
 			return
 		}
 		p := GetJSONParser()
-		err := p.parseLogMessage(bytesutil.ToUnsafeBytes(s), math.MaxInt)
+		err := p.parseLogMessage(bytesutil.ToUnsafeBytes(s), pu.preserveKeys, "", math.MaxInt)
 		if err != nil {
 			for _, filter := range pu.fieldFilters {
 				if !prefixfilter.IsWildcardFilter(filter) {
@@ -149,7 +158,7 @@ func parsePipeUnpackJSON(lex *lexer) (pipe, error) {
 	}
 
 	fromField := "_msg"
-	if !lex.isKeyword("fields", "result_prefix", "keep_original_fields", "skip_empty_results", ")", "|", "") {
+	if !lex.isKeyword("fields", "preserve_keys", "result_prefix", "keep_original_fields", "skip_empty_results") && !lex.isQueryPartTrailer() {
 		if lex.isKeyword("from") {
 			lex.nextToken()
 		}
@@ -171,6 +180,16 @@ func parsePipeUnpackJSON(lex *lexer) (pipe, error) {
 	}
 	if len(fieldFilters) == 0 {
 		fieldFilters = []string{"*"}
+	}
+
+	var preserveKeys []string
+	if lex.isKeyword("preserve_keys") {
+		lex.nextToken()
+		fn, err := parseFieldNamesInParens(lex)
+		if err != nil {
+			return nil, fmt.Errorf("cannot parse 'preserve_keys': %w", err)
+		}
+		preserveKeys = fn
 	}
 
 	resultPrefix := ""
@@ -197,6 +216,7 @@ func parsePipeUnpackJSON(lex *lexer) (pipe, error) {
 	pu := &pipeUnpackJSON{
 		fromField:          fromField,
 		fieldFilters:       fieldFilters,
+		preserveKeys:       preserveKeys,
 		resultPrefix:       resultPrefix,
 		keepOriginalFields: keepOriginalFields,
 		skipEmptyResults:   skipEmptyResults,

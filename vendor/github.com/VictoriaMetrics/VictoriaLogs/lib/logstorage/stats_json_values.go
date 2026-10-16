@@ -28,7 +28,7 @@ type statsJSONValues struct {
 }
 
 func (sv *statsJSONValues) String() string {
-	s := "json_values(" + fieldNamesString(sv.fieldFilters) + ")"
+	s := "json_values(" + fieldFiltersString(sv.fieldFilters) + ")"
 
 	if len(sv.sortFields) > 0 {
 		a := make([]string, len(sv.sortFields))
@@ -67,6 +67,7 @@ func (sv *statsJSONValues) newStatsProcessor(a *chunkedAllocator) statsProcessor
 
 	svp := a.newStatsJSONValuesTopkProcessor()
 	svp.sortFieldsLen = sortFieldsLen
+	svp.h.sortFields = sv.sortFields
 	return svp
 }
 
@@ -86,7 +87,7 @@ func (svp *statsJSONValuesProcessor) updateStatsForAllRows(sf statsFunc, br *blo
 	stateSizeIncrease := 0
 	mc := getMatchingColumns(br, sv.fieldFilters)
 	mc.sort()
-	for rowIdx := 0; rowIdx < br.rowsLen; rowIdx++ {
+	for rowIdx := range br.rowsLen {
 		stateSizeIncrease += svp.updateStateForRow(br, mc.cs, rowIdx)
 	}
 	putMatchingColumns(mc)

@@ -15,19 +15,20 @@ type ParallelReaderAtOpener struct {
 }
 
 type parallelReaderAtOpenerTask struct {
-	path     string
-	rc       *MustReadAtCloser
-	fileSize *uint64
+	path             string
+	rc               *MustReadAtCloser
+	fileSize         *uint64
+	adviseRandomRead bool
 }
 
-// Add adds a task for opening the file at the given path and storing it to *r, while storing the file size into *fileSize.
-//
+// Add adds a task for opening the file at the given path and storing it to *rc, while storing the file size into *fileSize.
 // Call Run() for running all the registered tasks in parallel.
-func (pro *ParallelReaderAtOpener) Add(path string, rc *MustReadAtCloser, fileSize *uint64) {
+func (pro *ParallelReaderAtOpener) Add(path string, rc *MustReadAtCloser, fileSize *uint64, adviseRandomRead bool) {
 	pro.tasks = append(pro.tasks, parallelReaderAtOpenerTask{
-		path:     path,
-		rc:       rc,
-		fileSize: fileSize,
+		path:             path,
+		rc:               rc,
+		fileSize:         fileSize,
+		adviseRandomRead: adviseRandomRead,
 	})
 }
 
@@ -37,17 +38,15 @@ func (pro *ParallelReaderAtOpener) Run() {
 	concurrencyCh := fsutil.GetConcurrencyCh()
 	for _, task := range pro.tasks {
 		concurrencyCh <- struct{}{}
-		wg.Add(1)
 
-		go func(path string, rc *MustReadAtCloser, fileSize *uint64) {
-			defer func() {
-				wg.Done()
-				<-concurrencyCh
-			}()
+		wg.Go(func() {
+			r := MustOpenReaderAt(task.path)
+			r.adviseRandomRead = task.adviseRandomRead
+			*task.rc = r
+			*task.fileSize = MustFileSize(task.path)
 
-			*rc = MustOpenReaderAt(path)
-			*fileSize = MustFileSize(path)
-		}(task.path, task.rc, task.fileSize)
+			<-concurrencyCh
+		})
 	}
 	wg.Wait()
 }
@@ -66,14 +65,10 @@ func MustCloseParallel(cs []MustCloser) {
 	concurrencyCh := fsutil.GetConcurrencyCh()
 	for _, c := range cs {
 		concurrencyCh <- struct{}{}
-		wg.Add(1)
-		go func(c MustCloser) {
-			defer func() {
-				wg.Done()
-				<-concurrencyCh
-			}()
+		wg.Go(func() {
 			c.MustClose()
-		}(c)
+			<-concurrencyCh
+		})
 	}
 	wg.Wait()
 }

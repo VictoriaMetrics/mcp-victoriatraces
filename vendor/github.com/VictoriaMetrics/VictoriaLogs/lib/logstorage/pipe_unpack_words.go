@@ -49,11 +49,15 @@ func (pu *pipeUnpackWords) canReturnLastNResults() bool {
 	return pu.dstField != "_time"
 }
 
+func (pu *pipeUnpackWords) isFixedOutputFieldsOrder() bool {
+	return false
+}
+
 func (pu *pipeUnpackWords) hasFilterInWithQuery() bool {
 	return false
 }
 
-func (pu *pipeUnpackWords) initFilterInValues(_ *inValuesCache, _ getFieldValuesFunc, _ bool) (pipe, error) {
+func (pu *pipeUnpackWords) initFilterInValues(_ *inValuesCache, _ getFieldValuesFunc) (pipe, error) {
 	return pu, nil
 }
 
@@ -135,7 +139,7 @@ func parsePipeUnpackWords(lex *lexer) (pipe, error) {
 	lex.nextToken()
 
 	srcField := "_msg"
-	if !lex.isKeyword("drop_duplicates", "as", ")", "|", "") {
+	if !lex.isKeyword("drop_duplicates", "as") && !lex.isQueryPartTrailer() {
 		if lex.isKeyword("from") {
 			lex.nextToken()
 		}
@@ -147,7 +151,7 @@ func parsePipeUnpackWords(lex *lexer) (pipe, error) {
 	}
 
 	dstField := srcField
-	if !lex.isKeyword("drop_duplicates", ")", "|", "") {
+	if !lex.isKeyword("drop_duplicates") && !lex.isQueryPartTrailer() {
 		if lex.isKeyword("as") {
 			lex.nextToken()
 		}

@@ -35,6 +35,10 @@ func (pd *pipeDecolorize) canReturnLastNResults() bool {
 	return true
 }
 
+func (pd *pipeDecolorize) isFixedOutputFieldsOrder() bool {
+	return false
+}
+
 func (pd *pipeDecolorize) updateNeededFields(_ *prefixfilter.Filter) {
 	// nothing to do
 }
@@ -43,7 +47,7 @@ func (pd *pipeDecolorize) hasFilterInWithQuery() bool {
 	return false
 }
 
-func (pd *pipeDecolorize) initFilterInValues(_ *inValuesCache, _ getFieldValuesFunc, _ bool) (pipe, error) {
+func (pd *pipeDecolorize) initFilterInValues(_ *inValuesCache, _ getFieldValuesFunc) (pipe, error) {
 	return pd, nil
 }
 
@@ -68,7 +72,7 @@ func parsePipeDecolorize(lex *lexer) (pipe, error) {
 	lex.nextToken()
 
 	field := "_msg"
-	if !lex.isKeyword("|", ")", "") {
+	if !lex.isQueryPartTrailer() {
 		f, err := parseFieldName(lex)
 		if err != nil {
 			return nil, fmt.Errorf("cannot parse field name after 'decolorize': %w", err)

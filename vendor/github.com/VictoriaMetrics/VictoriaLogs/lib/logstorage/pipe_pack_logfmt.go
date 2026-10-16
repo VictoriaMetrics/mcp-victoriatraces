@@ -13,14 +13,14 @@ import (
 type pipePackLogfmt struct {
 	resultField string
 
-	// the fields and/or field name prefixes to put inside the packed json
+	// the fields and/or field name prefixes to put inside the packed logfmt
 	fieldFilters []string
 }
 
 func (pp *pipePackLogfmt) String() string {
 	s := "pack_logfmt"
 	if len(pp.fieldFilters) > 0 {
-		s += " fields (" + fieldNamesString(pp.fieldFilters) + ")"
+		s += " fields (" + fieldFiltersString(pp.fieldFilters) + ")"
 	}
 	if !isMsgFieldName(pp.resultField) {
 		s += " as " + quoteTokenIfNeeded(pp.resultField)
@@ -40,6 +40,10 @@ func (pp *pipePackLogfmt) canReturnLastNResults() bool {
 	return pp.resultField != "_time"
 }
 
+func (pp *pipePackLogfmt) isFixedOutputFieldsOrder() bool {
+	return false
+}
+
 func (pp *pipePackLogfmt) updateNeededFields(pf *prefixfilter.Filter) {
 	updateNeededFieldsForPipePack(pf, pp.resultField, pp.fieldFilters)
 }
@@ -48,7 +52,7 @@ func (pp *pipePackLogfmt) hasFilterInWithQuery() bool {
 	return false
 }
 
-func (pp *pipePackLogfmt) initFilterInValues(_ *inValuesCache, _ getFieldValuesFunc, _ bool) (pipe, error) {
+func (pp *pipePackLogfmt) initFilterInValues(_ *inValuesCache, _ getFieldValuesFunc) (pipe, error) {
 	return pp, nil
 }
 
@@ -84,7 +88,7 @@ func parsePipePackLogfmt(lex *lexer) (pipe, error) {
 	if lex.isKeyword("as") {
 		lex.nextToken()
 	}
-	if !lex.isKeyword("|", ")", "") {
+	if !lex.isQueryPartTrailer() {
 		field, err := parseFieldName(lex)
 		if err != nil {
 			return nil, fmt.Errorf("cannot parse result field for 'pack_logfmt': %w", err)

@@ -21,7 +21,7 @@ func (pd *pipeDelete) String() string {
 		logger.Panicf("BUG: pipeDelete must contain at least a single field")
 	}
 
-	return "delete " + fieldNamesString(pd.fieldFilters)
+	return "delete " + fieldFiltersString(pd.fieldFilters)
 }
 
 func (pd *pipeDelete) splitToRemoteAndLocal(_ int64) (pipe, []pipe) {
@@ -36,6 +36,10 @@ func (pd *pipeDelete) canReturnLastNResults() bool {
 	return !prefixfilter.MatchFilters(pd.fieldFilters, "_time")
 }
 
+func (pd *pipeDelete) isFixedOutputFieldsOrder() bool {
+	return false
+}
+
 func (pd *pipeDelete) updateNeededFields(pf *prefixfilter.Filter) {
 	pf.AddDenyFilters(pd.fieldFilters)
 }
@@ -44,7 +48,7 @@ func (pd *pipeDelete) hasFilterInWithQuery() bool {
 	return false
 }
 
-func (pd *pipeDelete) initFilterInValues(_ *inValuesCache, _ getFieldValuesFunc, _ bool) (pipe, error) {
+func (pd *pipeDelete) initFilterInValues(_ *inValuesCache, _ getFieldValuesFunc) (pipe, error) {
 	return pd, nil
 }
 
@@ -83,7 +87,7 @@ func parsePipeDelete(lex *lexer) (pipe, error) {
 	}
 	lex.nextToken()
 
-	fieldFilters, err := parseCommaSeparatedFields(lex)
+	fieldFilters, err := parseCommaSeparatedFieldFilters(lex)
 	if err != nil {
 		return nil, err
 	}

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -44,6 +45,32 @@ func (tid *TenantID) less(a *TenantID) bool {
 		return tid.AccountID < a.AccountID
 	}
 	return tid.ProjectID < a.ProjectID
+}
+
+// MergeTenantIDs merges tenantIDss into a single sorted list without duplicates.
+func MergeTenantIDs(tenantIDss [][]TenantID) []TenantID {
+	uniqTenantIDs := make(map[TenantID]struct{})
+	for _, tenantIDs := range tenantIDss {
+		for _, tenantID := range tenantIDs {
+			uniqTenantIDs[tenantID] = struct{}{}
+		}
+	}
+
+	tenantIDs := make([]TenantID, 0, len(uniqTenantIDs))
+	for k := range uniqTenantIDs {
+		tenantIDs = append(tenantIDs, k)
+	}
+
+	sortTenantIDs(tenantIDs)
+
+	return tenantIDs
+}
+
+// sortTenantIDs sorts tenantIDs in place in ascending order.
+func sortTenantIDs(tenantIDs []TenantID) {
+	sort.Slice(tenantIDs, func(i, j int) bool {
+		return tenantIDs[i].less(&tenantIDs[j])
+	})
 }
 
 func (tid *TenantID) marshalString(dst []byte) []byte {
@@ -96,8 +123,8 @@ func ParseTenantID(s string) (TenantID, error) {
 		return tenantID, nil
 	}
 
-	n := strings.Index(s, ":")
-	if n < 0 {
+	before, after, ok := strings.Cut(s, ":")
+	if !ok {
 		account, err := getUint32FromString(s)
 		if err != nil {
 			return tenantID, fmt.Errorf("cannot parse accountID from %q: %w", s, err)
@@ -107,13 +134,13 @@ func ParseTenantID(s string) (TenantID, error) {
 		return tenantID, nil
 	}
 
-	account, err := getUint32FromString(s[:n])
+	account, err := getUint32FromString(before)
 	if err != nil {
 		return tenantID, fmt.Errorf("cannot parse accountID part from %q: %w", s, err)
 	}
 	tenantID.AccountID = account
 
-	project, err := getUint32FromString(s[n+1:])
+	project, err := getUint32FromString(after)
 	if err != nil {
 		return tenantID, fmt.Errorf("cannot parse projectID part from %q: %w", s, err)
 	}
@@ -135,7 +162,7 @@ func MarshalTenantIDsToJSON(tenantIDs []TenantID) []byte {
 func UnmarshalTenantIDsFromJSON(src []byte) ([]TenantID, error) {
 	var tenantIDs []TenantID
 	if err := json.Unmarshal(src, &tenantIDs); err != nil {
-		return nil, fmt.Errorf("cannot unmarshal tenantIDs from JSON array: %s", err)
+		return nil, fmt.Errorf("cannot unmarshal tenantIDs from JSON array: %w", err)
 	}
 	return tenantIDs, nil
 }

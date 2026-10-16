@@ -42,15 +42,19 @@ func (pu *pipeUnroll) canLiveTail() bool {
 }
 
 func (pu *pipeUnroll) canReturnLastNResults() bool {
-	return true
+	return !slices.Contains(pu.fields, "_time")
+}
+
+func (pu *pipeUnroll) isFixedOutputFieldsOrder() bool {
+	return false
 }
 
 func (pu *pipeUnroll) hasFilterInWithQuery() bool {
 	return pu.iff.hasFilterInWithQuery()
 }
 
-func (pu *pipeUnroll) initFilterInValues(cache *inValuesCache, getFieldValuesFunc getFieldValuesFunc, keepSubquery bool) (pipe, error) {
-	iffNew, err := pu.iff.initFilterInValues(cache, getFieldValuesFunc, keepSubquery)
+func (pu *pipeUnroll) initFilterInValues(cache *inValuesCache, getFieldValues getFieldValuesFunc) (pipe, error) {
+	iffNew, err := pu.iff.initFilterInValues(cache, getFieldValues)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +130,7 @@ func (pup *pipeUnrollProcessor) writeBlock(workerID uint, br *blockResult) {
 	}
 
 	fields := shard.fields
-	for rowIdx := 0; rowIdx < br.rowsLen; rowIdx++ {
+	for rowIdx := range br.rowsLen {
 		if needStop(pup.stopCh) {
 			return
 		}
@@ -180,7 +184,7 @@ func (shard *pipeUnrollProcessorShard) writeUnrolledFields(fieldNames []string, 
 
 	// write unrolled values to the next pipe.
 	fields := shard.fields
-	for unrollIdx := 0; unrollIdx < rows; unrollIdx++ {
+	for unrollIdx := range rows {
 		fields = fields[:0]
 		for i, values := range unrolledValues {
 			v := ""
@@ -230,7 +234,7 @@ func parsePipeUnroll(lex *lexer) (pipe, error) {
 		}
 		fields = fs
 	} else {
-		fs, err := parseCommaSeparatedFields(lex)
+		fs, err := parseCommaSeparatedFieldNames(lex)
 		if err != nil {
 			return nil, fmt.Errorf("cannot parse 'by ...': %w", err)
 		}
@@ -252,6 +256,7 @@ func parsePipeUnroll(lex *lexer) (pipe, error) {
 }
 
 func unpackJSONArray(dst []string, a *arena, s string) []string {
+	s = trimJSONWhitespace(s)
 	if s == "" || s[0] != '[' {
 		return dst
 	}

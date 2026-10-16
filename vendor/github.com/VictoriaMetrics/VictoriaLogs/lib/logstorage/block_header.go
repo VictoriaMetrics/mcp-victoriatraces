@@ -324,7 +324,7 @@ func unmarshalColumnHeadersRefsInplace(dst []columnHeaderRef, src []byte) ([]col
 	}
 	src = src[nSize:]
 
-	for i := uint64(0); i < n; i++ {
+	for i := range n {
 		columnNameID, nSize := encoding.UnmarshalVarUint64(src)
 		if nSize <= 0 {
 			return dst, srcOrig, fmt.Errorf("cannot unmarshal column name ID number %d out of %d", i, n)
@@ -557,11 +557,11 @@ func getNamesFromColumnHeaders(chs []columnHeader) []string {
 	return a
 }
 
-// columnHeaders contains information for values, which belong to a single label in a single block.
+// columnHeader contains information for values, which belong to a single field in a single block.
 //
 // The main column with an empty name is stored in messageValuesFilename,
-// while the rest of columns are stored in smallValuesFilename or bigValuesFilename depending
-// on the block size (see maxSmallValuesBlockSize).
+// while the rest of columns are stored in shard files selected by column name
+// (see streamWriters.getBloomValuesWriterForColumnName and getValuesFilePath).
 // This allows minimizing disk read IO when filtering by non-message columns.
 //
 // Every block column contains also a bloom filter for all the tokens stored in the column.
@@ -578,11 +578,11 @@ func getNamesFromColumnHeaders(chs []columnHeader) []string {
 //   - valueTypeIPv4 stores encoded into uint32 ips
 //   - valueTypeTimestampISO8601 stores encoded into uint64 timestamps
 //
-// Bloom filters for main column with an empty name is stored in messageBloomFilename,
-// while the rest of columns are stored in smallBloomFilename or bigBloomFilename depending on their size
-// (see maxSmallBloomFilterBlockSize).
+// Bloom filters for the main column with an empty name are stored in messageBloomFilename,
+// while bloom filters for the rest of columns are stored in the corresponding shard files
+// (see getBloomFilePath).
 type columnHeader struct {
-	// name contains column name aka label name
+	// name contains column name aka field name
 	name string
 
 	// valueType is the type of values stored in the block
@@ -601,16 +601,16 @@ type columnHeader struct {
 	// valuesDict contains unique values for valueType = valueTypeDict
 	valuesDict valuesDict
 
-	// valuesOffset contains the offset of the block in either messageValuesFilename, smallValuesFilename or bigValuesFilename
+	// valuesOffset contains the offset of the block in the values file for this column
 	valuesOffset uint64
 
-	// valuesSize contains the size of the block in either messageValuesFilename, smallValuesFilename or bigValuesFilename
+	// valuesSize contains the size of the block in the values file for this column
 	valuesSize uint64
 
-	// bloomFilterOffset contains the offset of the bloom filter in messageBloomFilename, smallBloomFilename or bigBloomFilename
+	// bloomFilterOffset contains the offset of the bloom filter in the bloom filter file for this column
 	bloomFilterOffset uint64
 
-	// bloomFilterSize contains the size of the bloom filter in messageBloomFilename, smallBloomFilename or bigBloomFilename
+	// bloomFilterSize contains the size of the bloom filter in the bloom filter file for this column
 	bloomFilterSize uint64
 }
 
@@ -988,8 +988,8 @@ func (th *timestampsHeader) copyFrom(src *timestampsHeader) {
 
 func (th *timestampsHeader) subTimeOffset(timeOffset int64) {
 	if timeOffset != 0 {
-		th.minTimestamp = subNoOverflowInt64(th.minTimestamp, timeOffset)
-		th.maxTimestamp = subNoOverflowInt64(th.maxTimestamp, timeOffset)
+		th.minTimestamp = SubInt64NoOverflow(th.minTimestamp, timeOffset)
+		th.maxTimestamp = SubInt64NoOverflow(th.maxTimestamp, timeOffset)
 	}
 }
 
