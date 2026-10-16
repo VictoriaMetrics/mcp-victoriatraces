@@ -199,7 +199,7 @@ func (shard *pipeTopkProcessorShard) writeBlock(br *blockResult) {
 		byColumns := slicesutil.SetLength(shard.byColumns, 1)
 		byColumnsIsTime := slicesutil.SetLength(shard.byColumnsIsTime, 1)
 		bb := bbPool.Get()
-		for rowIdx := 0; rowIdx < br.rowsLen; rowIdx++ {
+		for rowIdx := range br.rowsLen {
 			bb.B = bb.B[:0]
 			for i, values := range byColumnValues {
 				v := values[rowIdx]
@@ -254,7 +254,7 @@ func (shard *pipeTopkProcessorShard) writeBlock(br *blockResult) {
 		if slices.Contains(byColumnsIsTime, true) {
 			timestamps = br.getTimestamps()
 		}
-		for rowIdx := 0; rowIdx < br.rowsLen; rowIdx++ {
+		for rowIdx := range br.rowsLen {
 			for i, values := range byColumnValues {
 				v := ""
 				if !byColumnsIsTime[i] {
@@ -334,7 +334,7 @@ func (shard *pipeTopkProcessorShard) getRowsByPartition(partition string) *pipeT
 		}
 		partition = strings.Clone(partition)
 		shard.rowsByPartition[partition] = rs
-		shard.stateSizeBudget += int(unsafe.Sizeof(*rs)+unsafe.Sizeof(rs)) + len(partition)
+		shard.stateSizeBudget -= int(unsafe.Sizeof(*rs)+unsafe.Sizeof(rs)) + len(partition)
 	}
 	return rs
 }
@@ -395,11 +395,9 @@ func (ptp *pipeTopkProcessor) flush() error {
 
 	var wg sync.WaitGroup
 	for _, shard := range shards {
-		wg.Add(1)
-		go func(shard *pipeTopkProcessorShard) {
-			defer wg.Done()
+		wg.Go(func() {
 			shard.sortRows(ptp.stopCh)
-		}(shard)
+		})
 	}
 	wg.Wait()
 
@@ -681,7 +679,7 @@ func topkLess(ps *pipeSort, a, b *pipeTopkRow) bool {
 			bb.B = marshalTimestampRFC3339NanoString(bb.B[:0], a.timestamp)
 			vA = bytesutil.ToUnsafeString(bb.B)
 		} else if isTimeB[i] {
-			bb.B = marshalTimestampRFC3339NanoString(bb.B[:0], a.timestamp)
+			bb.B = marshalTimestampRFC3339NanoString(bb.B[:0], b.timestamp)
 			vB = bytesutil.ToUnsafeString(bb.B)
 		}
 

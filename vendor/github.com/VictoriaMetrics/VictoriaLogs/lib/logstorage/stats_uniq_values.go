@@ -21,7 +21,7 @@ type statsUniqValues struct {
 }
 
 func (su *statsUniqValues) String() string {
-	s := "uniq_values(" + fieldNamesString(su.fieldFilters) + ")"
+	s := "uniq_values(" + fieldFiltersString(su.fieldFilters) + ")"
 	if su.limit > 0 {
 		s += fmt.Sprintf(" limit %d", su.limit)
 	}
@@ -150,6 +150,9 @@ func (sup *statsUniqValuesProcessor) mergeState(_ *chunkedAllocator, sf statsFun
 		return
 	}
 
+	if sup.m == nil {
+		sup.m = make(map[string]struct{}, len(src.m))
+	}
 	for k := range src.m {
 		if _, ok := sup.m[k]; !ok {
 			sup.m[k] = struct{}{}
@@ -179,7 +182,7 @@ func (sup *statsUniqValuesProcessor) importState(src []byte, stopCh <-chan struc
 
 	m := make(map[string]struct{}, itemsLen)
 	stateSize := 0
-	for i := uint64(0); i < itemsLen; i++ {
+	for range itemsLen {
 		v, n := encoding.UnmarshalBytes(src)
 		if n <= 0 {
 			return 0, fmt.Errorf("cannot unmarshal item")
@@ -233,11 +236,8 @@ func mergeSetsParallel(ms []map[string]struct{}, concurrency uint, stopCh <-chan
 
 	var wg sync.WaitGroup
 	msShards := make([][]map[string]struct{}, shardsLen)
-	for i := range msShards {
-		wg.Add(1)
-		go func(idx int) {
-			defer wg.Done()
-
+	for idx := range msShards {
+		wg.Go(func() {
 			perCPU := make([]map[string]struct{}, cpusCount)
 			for i := range perCPU {
 				perCPU[i] = make(map[string]struct{})
@@ -253,16 +253,13 @@ func mergeSetsParallel(ms []map[string]struct{}, concurrency uint, stopCh <-chan
 			}
 
 			msShards[idx] = perCPU
-		}(i)
+		})
 	}
 	wg.Wait()
 
 	perCPUItems := make([][]string, cpusCount)
-	for i := range perCPUItems {
-		wg.Add(1)
-		go func(cpuIdx int) {
-			defer wg.Done()
-
+	for cpuIdx := range perCPUItems {
+		wg.Go(func() {
 			m := msShards[0][cpuIdx]
 			for _, perCPU := range msShards[1:] {
 				for s := range perCPU[cpuIdx] {
@@ -278,7 +275,7 @@ func mergeSetsParallel(ms []map[string]struct{}, concurrency uint, stopCh <-chan
 
 			items := setToSortedSlice(m)
 			perCPUItems[cpuIdx] = items
-		}(i)
+		})
 	}
 	wg.Wait()
 

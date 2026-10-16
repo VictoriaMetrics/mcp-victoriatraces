@@ -37,12 +37,16 @@ func init() {
 // Decompress appends decompressed src to dst and returns the result.
 //
 // This function must be called only for the trusted src.
+//
+// Otherwise use DecompressLimited function.
 func Decompress(dst, src []byte) ([]byte, error) {
 	d := getDecoder(0)
 	return d.DecodeAll(src, dst)
 }
 
 // Decompress appends decompressed src to dst and returns the result.
+//
+// If the decompressed result exceeds maxDataSizeBytes, then error is returned.
 func DecompressLimited(dst, src []byte, maxDataSizeBytes int) ([]byte, error) {
 	d := getDecoder(maxDataSizeBytes)
 	return d.DecodeAll(src, dst)
@@ -119,6 +123,7 @@ func getEncoder(compressionLevel zstd.EncoderLevel) *zstd.Encoder {
 func newEncoder(compressionLevel zstd.EncoderLevel) *zstd.Encoder {
 	e, err := zstd.NewWriter(nil,
 		zstd.WithEncoderCRC(false), // Disable CRC for performance reasons.
+		zstd.WithZeroFrames(false), // Match cgo behavior for empty input.
 		zstd.WithEncoderLevel(compressionLevel))
 	if err != nil {
 		logger.Panicf("BUG: failed to create ZSTD writer: %s", err)

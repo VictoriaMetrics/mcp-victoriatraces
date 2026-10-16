@@ -30,6 +30,10 @@ func (pl *pipeLimit) canReturnLastNResults() bool {
 	return false
 }
 
+func (pl *pipeLimit) isFixedOutputFieldsOrder() bool {
+	return false
+}
+
 func (pl *pipeLimit) updateNeededFields(_ *prefixfilter.Filter) {
 	// nothing to do
 }
@@ -38,7 +42,7 @@ func (pl *pipeLimit) hasFilterInWithQuery() bool {
 	return false
 }
 
-func (pl *pipeLimit) initFilterInValues(_ *inValuesCache, _ getFieldValuesFunc, _ bool) (pipe, error) {
+func (pl *pipeLimit) initFilterInValues(_ *inValuesCache, _ getFieldValuesFunc) (pipe, error) {
 	return pl, nil
 }
 
@@ -109,7 +113,7 @@ func parsePipeLimit(lex *lexer) (pipe, error) {
 	lex.nextToken()
 
 	limit := uint64(10)
-	if !lex.isKeyword("|", ")", "") {
+	if !lex.isQueryPartTrailer() {
 		limitStr, err := lex.nextCompoundToken()
 		if err != nil {
 			return nil, fmt.Errorf("cannot parse rows limit: %w", err)

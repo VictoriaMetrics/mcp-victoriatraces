@@ -17,7 +17,7 @@ type statsValues struct {
 }
 
 func (sv *statsValues) String() string {
-	s := "values(" + fieldNamesString(sv.fieldFilters) + ")"
+	s := "values(" + fieldFiltersString(sv.fieldFilters) + ")"
 	if sv.limit > 0 {
 		s += fmt.Sprintf(" limit %d", sv.limit)
 	}
@@ -61,7 +61,7 @@ func (svp *statsValuesProcessor) updateStatsForAllRowsColumn(c *blockResultColum
 		stateSizeIncrease += len(v)
 
 		values := svp.values
-		for i := 0; i < br.rowsLen; i++ {
+		for range br.rowsLen {
 			values = append(values, v)
 		}
 		svp.values = values

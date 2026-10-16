@@ -38,6 +38,10 @@ func (pl *pipeJSONArrayLen) canReturnLastNResults() bool {
 	return pl.resultField != "_time"
 }
 
+func (pl *pipeJSONArrayLen) isFixedOutputFieldsOrder() bool {
+	return false
+}
+
 func (pl *pipeJSONArrayLen) updateNeededFields(pf *prefixfilter.Filter) {
 	if pf.MatchString(pl.resultField) {
 		pf.AddDenyFilter(pl.resultField)
@@ -49,7 +53,7 @@ func (pl *pipeJSONArrayLen) hasFilterInWithQuery() bool {
 	return false
 }
 
-func (pl *pipeJSONArrayLen) initFilterInValues(_ *inValuesCache, _ getFieldValuesFunc, _ bool) (pipe, error) {
+func (pl *pipeJSONArrayLen) initFilterInValues(_ *inValuesCache, _ getFieldValuesFunc) (pipe, error) {
 	return pl, nil
 }
 
@@ -178,7 +182,7 @@ func parsePipeJSONArrayLen(lex *lexer) (pipe, error) {
 	if lex.isKeyword("as") {
 		lex.nextToken()
 	}
-	if !lex.isKeyword("|", ")", "") {
+	if !lex.isQueryPartTrailer() {
 		field, err := parseFieldName(lex)
 		if err != nil {
 			return nil, fmt.Errorf("cannot parse result field after 'len(%s)': %w", quoteTokenIfNeeded(fieldName), err)

@@ -47,11 +47,15 @@ func (ps *pipeSplit) canReturnLastNResults() bool {
 	return ps.dstField != "_time"
 }
 
+func (ps *pipeSplit) isFixedOutputFieldsOrder() bool {
+	return false
+}
+
 func (ps *pipeSplit) hasFilterInWithQuery() bool {
 	return false
 }
 
-func (ps *pipeSplit) initFilterInValues(_ *inValuesCache, _ getFieldValuesFunc, _ bool) (pipe, error) {
+func (ps *pipeSplit) initFilterInValues(_ *inValuesCache, _ getFieldValuesFunc) (pipe, error) {
 	return ps, nil
 }
 
@@ -138,7 +142,7 @@ func parsePipeSplit(lex *lexer) (pipe, error) {
 	}
 
 	srcField := "_msg"
-	if !lex.isKeyword("as", ")", "|", "") {
+	if !lex.isKeyword("as") && !lex.isQueryPartTrailer() {
 		if lex.isKeyword("from") {
 			lex.nextToken()
 		}
@@ -150,7 +154,7 @@ func parsePipeSplit(lex *lexer) (pipe, error) {
 	}
 
 	dstField := srcField
-	if !lex.isKeyword(")", "|", "") {
+	if !lex.isQueryPartTrailer() {
 		if lex.isKeyword("as") {
 			lex.nextToken()
 		}

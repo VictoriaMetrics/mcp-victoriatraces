@@ -25,7 +25,7 @@ func (ps *pipeSetStreamFields) String() string {
 	if ps.iff != nil {
 		s += " " + ps.iff.String()
 	}
-	s += " " + fieldNamesString(ps.streamFieldFilters)
+	s += " " + fieldFiltersString(ps.streamFieldFilters)
 	return s
 }
 
@@ -39,6 +39,10 @@ func (ps *pipeSetStreamFields) canLiveTail() bool {
 
 func (ps *pipeSetStreamFields) canReturnLastNResults() bool {
 	return true
+}
+
+func (ps *pipeSetStreamFields) isFixedOutputFieldsOrder() bool {
+	return false
 }
 
 func (ps *pipeSetStreamFields) updateNeededFields(f *prefixfilter.Filter) {
@@ -58,8 +62,8 @@ func (ps *pipeSetStreamFields) hasFilterInWithQuery() bool {
 	return ps.iff.hasFilterInWithQuery()
 }
 
-func (ps *pipeSetStreamFields) initFilterInValues(cache *inValuesCache, getFieldValuesFunc getFieldValuesFunc, keepSubquery bool) (pipe, error) {
-	iffNew, err := ps.iff.initFilterInValues(cache, getFieldValuesFunc, keepSubquery)
+func (ps *pipeSetStreamFields) initFilterInValues(cache *inValuesCache, getFieldValues getFieldValuesFunc) (pipe, error) {
+	iffNew, err := ps.iff.initFilterInValues(cache, getFieldValues)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +121,7 @@ func (psp *pipeSetStreamFieldsProcessor) writeBlock(workerID uint, br *blockResu
 
 	streamColumn := br.getColumnByName("_stream")
 	streamIDColumn := br.getColumnByName("_stream_id")
-	for rowIdx := 0; rowIdx < br.rowsLen; rowIdx++ {
+	for rowIdx := range br.rowsLen {
 		stream := ""
 		streamID := ""
 		if ps.iff == nil || bm.isSetBit(rowIdx) {
@@ -159,6 +163,7 @@ func (shard *pipeSetStreamFieldsProcessorShard) setLogStreamFields(ps *pipeSetSt
 	bLen := len(shard.a.b)
 	sort.Sort(st)
 	shard.a.b = st.marshalString(shard.a.b)
+
 	PutStreamTags(st)
 
 	return bytesutil.ToUnsafeString(shard.a.b[bLen:])
@@ -181,7 +186,7 @@ func parsePipeSetStreamFields(lex *lexer) (pipe, error) {
 	}
 
 	// Parse stream fields
-	streamFieldFilters, err := parseCommaSeparatedFields(lex)
+	streamFieldFilters, err := parseCommaSeparatedFieldFilters(lex)
 	if err != nil {
 		return nil, err
 	}
