@@ -413,3 +413,54 @@ func TestCreateSelectRequest_DefaultTenant(t *testing.T) {
 		})
 	}
 }
+
+// TestCreateRequestsPassthroughHeaders tests that headers listed in MCP_PASSTHROUGH_HEADERS
+// are forwarded from the incoming MCP request and override VT_INSTANCE_HEADERS on collision
+func TestCreateRequestsPassthroughHeaders(t *testing.T) {
+	t.Setenv("VT_INSTANCE_ENTRYPOINT", "http://example.com")
+	t.Setenv("VT_INSTANCE_HEADERS", "X-Token=static-token,X-Static=static-value")
+	t.Setenv("MCP_PASSTHROUGH_HEADERS", "X-Token,X-Missing")
+
+	cfg, err := config.InitConfig()
+	if err != nil {
+		t.Fatalf("Failed to init config: %v", err)
+	}
+
+	tcr := mcp.CallToolRequest{
+		Header: http.Header{
+			"X-Token": []string{"client-token"},
+			"X-Other": []string{"not-forwarded"},
+		},
+	}
+
+	check := func(name string, req *http.Request) {
+		t.Helper()
+		if got := req.Header.Get("X-Token"); got != "client-token" {
+			t.Errorf("%s: expected X-Token 'client-token', got %q", name, got)
+		}
+		if got := req.Header.Get("X-Static"); got != "static-value" {
+			t.Errorf("%s: expected X-Static 'static-value', got %q", name, got)
+		}
+		if got := req.Header.Get("X-Missing"); got != "" {
+			t.Errorf("%s: expected no X-Missing header, got %q", name, got)
+		}
+		if got := req.Header.Get("X-Other"); got != "" {
+			t.Errorf("%s: expected no X-Other header, got %q", name, got)
+		}
+	}
+
+	selectReq, err := CreateSelectRequest(context.Background(), cfg, tcr, "traces")
+	if err != nil {
+		t.Fatalf("Failed to create select request: %v", err)
+	}
+	check("select", selectReq)
+	if got := selectReq.Header.Get("AccountID"); got != "0" {
+		t.Errorf("select: expected AccountID '0', got %q", got)
+	}
+
+	adminReq, err := CreateAdminRequest(context.Background(), cfg, tcr)
+	if err != nil {
+		t.Fatalf("Failed to create admin request: %v", err)
+	}
+	check("admin", adminReq)
+}

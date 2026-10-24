@@ -96,6 +96,42 @@ func TestInitConfig(t *testing.T) {
 		}
 	})
 
+	// Test case: Passthrough headers parsing
+	t.Run("Passthrough headers parsing", func(t *testing.T) {
+		t.Setenv("VT_INSTANCE_ENTRYPOINT", "http://example.com")
+		t.Setenv("MCP_PASSTHROUGH_HEADERS", " X-Token , ,X-Access-Key")
+
+		cfg, err := InitConfig()
+		if err != nil {
+			t.Fatalf("Expected no error, got: %v", err)
+		}
+
+		got := cfg.PassthroughHeaders()
+		expected := []string{"X-Token", "X-Access-Key"}
+		if len(got) != len(expected) {
+			t.Fatalf("Expected passthrough headers %v, got %v", expected, got)
+		}
+		for i := range expected {
+			if got[i] != expected[i] {
+				t.Errorf("Expected passthrough headers %v, got %v", expected, got)
+			}
+		}
+	})
+
+	// Test case: No passthrough headers
+	t.Run("No passthrough headers", func(t *testing.T) {
+		t.Setenv("VT_INSTANCE_ENTRYPOINT", "http://example.com")
+		t.Setenv("MCP_PASSTHROUGH_HEADERS", "")
+
+		cfg, err := InitConfig()
+		if err != nil {
+			t.Fatalf("Expected no error, got: %v", err)
+		}
+		if len(cfg.PassthroughHeaders()) != 0 {
+			t.Errorf("Expected no passthrough headers, got %v", cfg.PassthroughHeaders())
+		}
+	})
+
 	// Test case 3: Empty custom headers
 	t.Run("Empty custom headers", func(t *testing.T) {
 		// Set environment variables
