@@ -22,6 +22,7 @@ type Config struct {
 	disabledTools      map[string]bool
 	heartbeatInterval  time.Duration
 	defaultTenantID    logstorage.TenantID
+	authToken          string
 
 	// Logging configuration
 	logFormat string
@@ -112,6 +113,7 @@ func InitConfig() (*Config, error) {
 		heartbeatInterval:  heartbeatInterval,
 		logFormat:          logFormat,
 		logLevel:           logLevel,
+		authToken:          os.Getenv("MCP_AUTH_TOKEN"),
 	}
 	// Left for backward compatibility
 	if result.listenAddr == "" {
@@ -257,4 +259,10 @@ func (c *Config) LogLevel() string {
 
 func (c *Config) DefaultTenantID() logstorage.TenantID {
 	return c.defaultTenantID
+}
+
+// AuthToken returns the bearer token required on incoming MCP requests in sse/http modes.
+// Empty means authentication is disabled.
+func (c *Config) AuthToken() string {
+	return c.authToken
 }
