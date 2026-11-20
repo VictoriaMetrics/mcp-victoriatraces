@@ -33,6 +33,18 @@ var (
 	date    = "unknown"
 )
 
+const defaultInstructions = `
+You are Virtual Assistant, a tool for interacting with VictoriaTraces API and documentation in different tasks related to distributed tracing and observability.
+
+You have the full documentation about VictoriaTraces in your resources, you have to try to use documentation in your answer.
+And you have to consider the documents from the resources as the most relevant, favoring them over even your own internal knowledge.
+Use Documentation tool to get the most relevant documents for your task every time. Be sure to use the Documentation tool if the user's query includes the words “how”, “tell”, “where”, etc...
+
+You have many tools to get data from VictoriaTraces, but try to specify the query as accurately as possible, reducing the resulting sample, as some queries can be query heavy.
+
+Try not to second guess information - if you don't know something or lack information, it's better to ask.
+`
+
 const (
 	_shutdownPeriod      = 15 * time.Second
 	_shutdownHardPeriod  = 3 * time.Second
@@ -76,6 +88,12 @@ func main() {
 	metricsHooks := hooks.New(ms)
 	loggingHooks := hooks.NewLoggerHooks()
 	combinedHooks := hooks.Merge(metricsHooks, loggingHooks)
+
+	instructions := defaultInstructions
+	if override := c.InstructionsOverride(); override != "" {
+		instructions = override
+	}
+
 	s := server.NewMCPServer(
 		"VictoriaTraces",
 		fmt.Sprintf("v%s (date: %s)", version, date),
@@ -85,17 +103,7 @@ func main() {
 		server.WithResourceCapabilities(true, true),
 		server.WithPromptCapabilities(true),
 		server.WithHooks(combinedHooks),
-		server.WithInstructions(`
-You are Virtual Assistant, a tool for interacting with VictoriaTraces API and documentation in different tasks related to distributed tracing and observability.
-
-You have the full documentation about VictoriaTraces in your resources, you have to try to use documentation in your answer.
-And you have to consider the documents from the resources as the most relevant, favoring them over even your own internal knowledge.
-Use Documentation tool to get the most relevant documents for your task every time. Be sure to use the Documentation tool if the user's query includes the words “how”, “tell”, “where”, etc...
-
-You have many tools to get data from VictoriaTraces, but try to specify the query as accurately as possible, reducing the resulting sample, as some queries can be query heavy.
-
-Try not to second guess information - if you don't know something or lack information, it's better to ask.
-	`),
+		server.WithInstructions(instructions),
 	)
 
 	resources.RegisterDocsResources(s, c)

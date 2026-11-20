@@ -13,16 +13,17 @@ import (
 )
 
 type Config struct {
-	serverMode         string
-	listenAddr         string
-	entrypoint         string
-	bearerToken        string
-	customHeaders      map[string]string
-	passthroughHeaders []string
-	disabledTools      map[string]bool
-	heartbeatInterval  time.Duration
-	defaultTenantID    logstorage.TenantID
-	authToken          string
+	serverMode           string
+	listenAddr           string
+	entrypoint           string
+	bearerToken          string
+	customHeaders        map[string]string
+	passthroughHeaders   []string
+	disabledTools        map[string]bool
+	heartbeatInterval    time.Duration
+	defaultTenantID      logstorage.TenantID
+	authToken            string
+	instructionsOverride string
 
 	// Logging configuration
 	logFormat string
@@ -103,17 +104,18 @@ func InitConfig() (*Config, error) {
 	}
 
 	result := &Config{
-		serverMode:         strings.ToLower(os.Getenv("MCP_SERVER_MODE")),
-		listenAddr:         os.Getenv("MCP_LISTEN_ADDR"),
-		entrypoint:         os.Getenv("VT_INSTANCE_ENTRYPOINT"),
-		bearerToken:        os.Getenv("VT_INSTANCE_BEARER_TOKEN"),
-		customHeaders:      customHeadersMap,
-		passthroughHeaders: passthroughHeaders,
-		disabledTools:      disabledToolsMap,
-		heartbeatInterval:  heartbeatInterval,
-		logFormat:          logFormat,
-		logLevel:           logLevel,
-		authToken:          os.Getenv("MCP_AUTH_TOKEN"),
+		serverMode:           strings.ToLower(os.Getenv("MCP_SERVER_MODE")),
+		listenAddr:           os.Getenv("MCP_LISTEN_ADDR"),
+		entrypoint:           os.Getenv("VT_INSTANCE_ENTRYPOINT"),
+		bearerToken:          os.Getenv("VT_INSTANCE_BEARER_TOKEN"),
+		customHeaders:        customHeadersMap,
+		passthroughHeaders:   passthroughHeaders,
+		disabledTools:        disabledToolsMap,
+		heartbeatInterval:    heartbeatInterval,
+		logFormat:            logFormat,
+		logLevel:             logLevel,
+		authToken:            os.Getenv("MCP_AUTH_TOKEN"),
+		instructionsOverride: strings.TrimSpace(os.Getenv("MCP_INSTRUCTIONS_OVERRIDE")),
 	}
 	// Left for backward compatibility
 	if result.listenAddr == "" {
@@ -265,4 +267,10 @@ func (c *Config) DefaultTenantID() logstorage.TenantID {
 // Empty means authentication is disabled.
 func (c *Config) AuthToken() string {
 	return c.authToken
+}
+
+// InstructionsOverride returns text that replaces the default MCP server instructions.
+// Empty means the default instructions are used.
+func (c *Config) InstructionsOverride() string {
+	return c.instructionsOverride
 }
