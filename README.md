@@ -114,6 +114,8 @@ MCP Server for VictoriaTraces is configured via environment variables:
 | `VT_INSTANCE_ENTRYPOINT`   | URL to VictoriaTraces instance                            | Yes | -      | -                      |
 | `VT_INSTANCE_BEARER_TOKEN` | Authentication token for VictoriaTraces API               | No | -      | -                      |
 | `VT_INSTANCE_HEADERS`      | Custom HTTP headers to send with requests (comma-separated key=value pairs) | No | -      | -                      |
+| `VT_INSTANCE_CA_CERT`      | PEM-encoded CA certificate(s) to verify the TLS certificate of VictoriaTraces with, instead of the system CA bundle. Useful when mounting a CA file is not possible. Literal `\n` sequences are treated as newlines. Cannot be used with `VT_INSTANCE_CA_CERT_FILE` | No | - | - |
+| `VT_INSTANCE_CA_CERT_FILE` | Path to a file with PEM-encoded CA certificate(s) to verify the TLS certificate of VictoriaTraces with, instead of the system CA bundle. The file is re-read automatically, so CA rotation does not need a restart. Cannot be used with `VT_INSTANCE_CA_CERT` | No | - | - |
 | `MCP_PASSTHROUGH_HEADERS`  | HTTP header names to forward from incoming MCP requests to VictoriaTraces (comma-separated list). Overrides `VT_INSTANCE_HEADERS` on collision. Only applies in `sse`/`http` modes. | No | - | - |
 | `VT_DEFAULT_TENANT_ID`     | Default tenant ID used when tenant is not specified in requests (format: `AccountID:ProjectID` or `AccountID`) | No       | `0:0`            | -                      |
 | `MCP_SERVER_MODE`          | Server operation mode. See [Modes](#modes) for details. | No | `stdio` | `stdio`, `sse`, `http` |
