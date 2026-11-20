@@ -145,6 +145,9 @@ export VT_INSTANCE_ENTRYPOINT="https://localhost:10428"
 # Expected syntax is key=value separated by commas
 export VT_INSTANCE_HEADERS="<HEADER>=<HEADER_VALUE>,<HEADER>=<HEADER_VALUE>"
 
+# Forward specific headers from incoming MCP requests to VictoriaTraces (sse/http modes only)
+export MCP_PASSTHROUGH_HEADERS="X-Token,X-Access-Key"
+
 # Server mode
 export MCP_SERVER_MODE="sse"
 export MCP_SSE_ADDR="0.0.0.0:8082"
@@ -431,6 +434,20 @@ These are just examples at the moment, the prompt library will be added to in th
 | Prompt          | Description                                             |
 |-----------------|---------------------------------------------------------|
 | `documentation` | Search VictoriaTraces documentation for specific topics |
+
+## FAQ
+
+### How to use one MCP server instance for several VictoriaTraces instances?
+
+Set `MCP_PASSTHROUGH_HEADERS` on the MCP server and put [vmauth with header-based routing](https://docs.victoriametrics.com/victoriametrics/vmauth/#routing-by-header) in front of your VictoriaTraces instances.
+Each MCP client then sends its own header value in its config, and vmauth routes the request to the matching instance.
+
+### Which headers win when the same header is set in several places?
+
+Headers listed in `MCP_PASSTHROUGH_HEADERS` override the same headers from `VT_INSTANCE_HEADERS`.
+A forwarded `Authorization` header also replaces the one built from `VT_INSTANCE_BEARER_TOKEN`.
+
+The `AccountID` and `ProjectID` headers are the exception. The server always sets them from the `tenant` tool argument or from `VT_DEFAULT_TENANT_ID`, so forwarding them from the client has no effect.
 
 ## Roadmap
  
