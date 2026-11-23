@@ -17,9 +17,9 @@ var (
 		mcp.WithDescription("Get trace info by trace ID. This tool uses `/select/jaeger/api/traces/{trace_id}` endpoint of VictoriaTraces API."),
 		mcp.WithToolAnnotation(mcp.ToolAnnotation{
 			Title:           "Trace information",
-			ReadOnlyHint:    ptr(true),
-			DestructiveHint: ptr(false),
-			OpenWorldHint:   ptr(true),
+			ReadOnlyHint:    new(true),
+			DestructiveHint: new(false),
+			OpenWorldHint:   new(true),
 		}),
 		mcp.WithString("tenant",
 			mcp.Title("Tenant name (Account ID and Project ID)"),
@@ -53,7 +53,7 @@ func RegisterToolTrace(s *server.MCPServer, c *config.Config) {
 	if c.IsToolDisabled(toolNameTrace) {
 		return
 	}
-	s.AddTool(toolTrace, func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	s.AddTool(withCloudParams(c, toolTrace), func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		return toolTraceHandler(ctx, c, request)
 	})
 }

@@ -73,6 +73,9 @@ func main() {
 		log.Fatalf("FATAL: Failed to initialize logger: %v\n", err)
 		return
 	}
+	for _, warning := range c.Warnings() {
+		slog.Warn(warning)
+	}
 
 	if !c.IsStdio() {
 		slog.Info("Starting mcp-victoriatraces",
@@ -114,6 +117,15 @@ func main() {
 	tools.RegisterToolDependencies(s, c)
 	tools.RegisterToolDocumentation(s, c)
 	tools.RegisterToolServiceOperations(s, c)
+
+	// VictoriaMetrics Cloud tools (only with VMC_API_KEY)
+	tools.RegisterToolTiers(s, c)
+	tools.RegisterToolRegions(s, c)
+	tools.RegisterToolDeployments(s, c)
+	tools.RegisterToolAccessTokens(s, c)
+	tools.RegisterToolRuleFile(s, c)
+	tools.RegisterToolRuleFilenames(s, c)
+	tools.RegisterToolCloudProviders(s, c)
 
 	prompts.RegisterPromptDocumentation(s, c)
 

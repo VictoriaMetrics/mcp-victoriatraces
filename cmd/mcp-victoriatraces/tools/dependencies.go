@@ -17,9 +17,9 @@ var (
 		mcp.WithDescription("Query the service dependency graph. This tools uses `/select/jaeger/api/dependencies` endpoint of VictoriaTraces API."),
 		mcp.WithToolAnnotation(mcp.ToolAnnotation{
 			Title:           "Service dependency graph",
-			ReadOnlyHint:    ptr(true),
-			DestructiveHint: ptr(false),
-			OpenWorldHint:   ptr(true),
+			ReadOnlyHint:    new(true),
+			DestructiveHint: new(false),
+			OpenWorldHint:   new(true),
 		}),
 		mcp.WithString("tenant",
 			mcp.Title("Tenant name (Account ID and Project ID)"),
@@ -74,7 +74,7 @@ func RegisterToolDependencies(s *server.MCPServer, c *config.Config) {
 	if c.IsToolDisabled(toolNameDependencies) {
 		return
 	}
-	s.AddTool(toolDependencies, func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	s.AddTool(withCloudParams(c, toolDependencies), func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		return toolDependenciesHandler(ctx, c, request)
 	})
 }
