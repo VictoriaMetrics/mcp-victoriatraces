@@ -71,7 +71,7 @@ release:
 
 dockers_v2:
   - images:
-      - "ghcr.io/victoriametrics-community/mcp-victoriatraces"
+      - "ghcr.io/victoriametrics/mcp-victoriatraces"
     tags:
       - latest
       - "{{ .Version }}"
