@@ -67,7 +67,7 @@ changelog:
 
 release:
   footer: |
-    **Full Changelog**: https://github.com/VictoriaMetrics-Community/mcp-victoriatraces/compare/{{ .PreviousTag }}...{{ .Tag }}
+    **Full Changelog**: https://github.com/VictoriaMetrics/mcp-victoriatraces/compare/{{ .PreviousTag }}...{{ .Tag }}
 
 dockers_v2:
   - images:
@@ -86,7 +86,7 @@ dockers_v2:
       "org.opencontainers.image.created": "{{.Date}}"
       "org.opencontainers.image.revision": "{{.FullCommit}}"
       "org.opencontainers.image.licenses": "Apache-2.0"
-      "io.modelcontextprotocol.server.name": "io.github.VictoriaMetrics-Community/mcp-victoriatraces"
+      "io.modelcontextprotocol.server.name": "io.github.VictoriaMetrics/mcp-victoriatraces"
     annotations:
       "project": "{{.ProjectName}}"
     platforms:
