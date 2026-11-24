@@ -18,17 +18,31 @@
       "environmentVariables": [
         {
           "name": "VT_INSTANCE_ENTRYPOINT",
-          "description": "URL to VictoriaTraces instance (it should be root URL of vtlingle or vtselect), for example http://localhost:10428",
-          "isRequired": true,
+          "description": "URL to VictoriaTraces instance (it should be root URL of vtsingle or vtselect), for example http://localhost:10428. Required unless VMC_API_KEY is set, cannot be used with VMC_API_KEY",
+          "isRequired": false,
           "format": "string",
           "isSecret": false
         },
         {
           "name": "VT_INSTANCE_BEARER_TOKEN",
-          "description": "Authentication token for VictoriaMetrics API",
-          "isRequired": true,
+          "description": "Optional: authentication token for VictoriaTraces API",
+          "isRequired": false,
           "format": "string",
           "isSecret": true
+        },
+        {
+          "name": "VMC_API_KEY",
+          "description": "Optional: API key from VictoriaMetrics Cloud Console (if you have VictoriaTraces deployments in VictoriaMetrics Cloud). Required unless VT_INSTANCE_ENTRYPOINT is set, cannot be used with VT_INSTANCE_ENTRYPOINT",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": true
+        },
+        {
+          "name": "VMC_API_BASE_URL",
+          "description": "Optional: base URL of the VictoriaMetrics Cloud API, https://api.victoriametrics.cloud by default",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
         },
         {
           "name": "MCP_DISABLED_TOOLS",

@@ -17,9 +17,9 @@ var (
 		mcp.WithDescription("Get all the span names (operations) of a service. This tool uses `/select/jaeger/api/services/{service_name}/operations` endpoint of VictoriaTraces API."),
 		mcp.WithToolAnnotation(mcp.ToolAnnotation{
 			Title:           "List of span names (operations) of a service",
-			ReadOnlyHint:    ptr(true),
-			DestructiveHint: ptr(false),
-			OpenWorldHint:   ptr(true),
+			ReadOnlyHint:    new(true),
+			DestructiveHint: new(false),
+			OpenWorldHint:   new(true),
 		}),
 		mcp.WithString("tenant",
 			mcp.Title("Tenant name (Account ID and Project ID)"),
@@ -53,7 +53,7 @@ func RegisterToolServiceOperations(s *server.MCPServer, c *config.Config) {
 	if c.IsToolDisabled(toolNameServiceOperations) {
 		return
 	}
-	s.AddTool(toolServiceOperations, func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	s.AddTool(withCloudParams(c, toolServiceOperations), func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		return toolServiceOperationsHandler(ctx, c, request)
 	})
 }

@@ -18,6 +18,7 @@ This MCP server allows you to use almost all read-only APIs of VictoriaTraces:
 
 - Get services and operations (span names)
 - Query traces, explore and analyze traces data
+- Integration with [VictoriaMetrics Cloud](https://docs.victoriametrics.com/victoriametrics-cloud/) VictoriaTraces deployments
  
 In addition, the MCP server contains embedded up-to-date documentation and is able to search it without online access.
 
@@ -30,7 +31,7 @@ You can also combine the MCP server with other observability or doc search MCP S
 
 ## Requirements
 
-- [VictoriaTraces](https://docs.victoriametrics.com/victoriatraces/) instance: ([single-node](https://docs.victoriametrics.com/victoriatraces/) or [cluster](https://docs.victoriametrics.com/victoriatraces/cluster/))
+- [VictoriaTraces](https://docs.victoriametrics.com/victoriatraces/) instance ([single-node](https://docs.victoriametrics.com/victoriatraces/) or [cluster](https://docs.victoriametrics.com/victoriatraces/cluster/)) or [VictoriaMetrics Cloud](https://docs.victoriametrics.com/victoriametrics-cloud/) account with VictoriaTraces deployments
 - Go 1.25 or higher (if you want to build from source)
 
 ## Installation
@@ -112,7 +113,9 @@ MCP Server for VictoriaTraces is configured via environment variables:
 
 | Variable                   | Description                                             | Required | Default | Allowed values         |
 |----------------------------|---------------------------------------------------------|----|--------|------------------------|
-| `VT_INSTANCE_ENTRYPOINT`   | URL to VictoriaTraces instance                            | Yes | -      | -                      |
+| `VT_INSTANCE_ENTRYPOINT`   | URL to VictoriaTraces instance. Cannot be used with `VMC_API_KEY` | Yes (if you don't use `VMC_API_KEY`) | - | - |
+| `VMC_API_KEY`              | [API key from VictoriaMetrics Cloud Console](https://docs.victoriametrics.com/victoriametrics-cloud/api/) to work with VictoriaTraces deployments in VictoriaMetrics Cloud. Set it to `dynamic` to take the key from the `X-VM-Cloud-Access` header of every incoming MCP request instead (only in `sse`/`http` modes). Cannot be used with `VT_INSTANCE_ENTRYPOINT` | Yes (if you don't use `VT_INSTANCE_ENTRYPOINT`) | - | - |
+| `VMC_API_BASE_URL`         | Base URL of the VictoriaMetrics Cloud API | No | `https://api.victoriametrics.cloud` | - |
 | `VT_INSTANCE_BEARER_TOKEN` | Authentication token for VictoriaTraces API               | No | -      | -                      |
 | `VT_INSTANCE_HEADERS`      | Custom HTTP headers to send with requests (comma-separated key=value pairs) | No | -      | -                      |
 | `VT_INSTANCE_CA_CERT`      | PEM-encoded CA certificate(s) to verify the TLS certificate of VictoriaTraces with, instead of the system CA bundle. Useful when mounting a CA file is not possible. Literal `\n` sequences are treated as newlines. Cannot be used with `VT_INSTANCE_CA_CERT_FILE` | No | - | - |
@@ -145,6 +148,9 @@ More info about traqnsports you can find in MCP docs:
 
 ```bash
 export VT_INSTANCE_ENTRYPOINT="https://localhost:10428"
+
+# For VictoriaMetrics Cloud (instead of VT_INSTANCE_ENTRYPOINT)
+export VMC_API_KEY="<your-api-key>"
 
 # Require clients to send "Authorization: Bearer <token>" (optional, only for sse/http modes)
 export MCP_AUTH_TOKEN="your-secret-token"
@@ -432,6 +438,23 @@ Here's a list of available tools:
 | `traces`        | Query traces                                     |
 | `trace`         | Get trace info by trace ID                       |
 | `dependencies`  | Query the service dependency graph               |
+
+#### VictoriaMetrics Cloud
+
+Additional tools available for [VictoriaMetrics Cloud](https://docs.victoriametrics.com/victoriametrics-cloud/) deployments (with `VMC_API_KEY` parameter).
+In this mode every VictoriaTraces tool except `documentation` takes a required `deployment_id` argument with the ID of the VictoriaTraces deployment to work with,
+and the MCP server uses an access token of that deployment to query it: a read-only token without a tenant, or a read-write one when the deployment has no such read-only token.
+Create a read-only access token for the deployment to keep write credentials out of the MCP server.
+
+| Tool              | Description                                       |
+|-------------------|---------------------------------------------------|
+| `deployments`     | List of VictoriaTraces deployments                |
+| `access_tokens`   | List of access tokens of a deployment             |
+| `tiers`           | List of VictoriaTraces deployment tiers           |
+| `regions`         | List of regions                                   |
+| `cloud_providers` | List of cloud providers                           |
+| `rule_filenames`  | List of alerting and recording rules files of a deployment |
+| `rule_file`       | Content of an alerting and recording rules file of a deployment |
 
 ### Prompts
 
