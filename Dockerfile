@@ -14,6 +14,7 @@ COPY . .
 
 # Download dependencies and build
 RUN go mod download
+RUN go run ./scripts/docsindex
 RUN go build -o mcp-victoriatraces cmd/mcp-victoriatraces/main.go
 
 # Runtime stage

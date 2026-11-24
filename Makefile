@@ -10,6 +10,10 @@ update-blog: download-blog
 
 update-resources: update-docs update-blog
 
+docs-index:
+	rm -f ./cmd/mcp-victoriatraces/resources/docsindex/docs-index.tar.gz
+	go run ./scripts/docsindex
+
 test:
 	bash ./scripts/test-all.sh
 
@@ -19,7 +23,7 @@ check:
 lint:
 	bash ./scripts/lint-all.sh
 
-build:
+build: docs-index
 	bash ./scripts/build-binaries.sh
 
 all: test check lint build

@@ -1,6 +1,10 @@
 version: 2
 project_name: mcp-victoriatraces
 
+before:
+  hooks:
+    - make docs-index
+
 builds:
   - env:
       - CGO_ENABLED=0
